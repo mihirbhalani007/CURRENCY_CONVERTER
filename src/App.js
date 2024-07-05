@@ -18,8 +18,8 @@ function App() {
     convertCurrency,
   } = useCurrencyConversion();
 
-  const [selectedOption1, setSelectedOption1] = useState("USD");
-  const [selectedOption2, setSelectedOption2] = useState("INR");
+  const [selectedOption1, setSelectedOption1] = useState();
+  const [selectedOption2, setSelectedOption2] = useState();
   const [amount, setAmount] = useState(1);
 
   const _onSelect1 = (selectedOption) => {
