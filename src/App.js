@@ -1,36 +1,26 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import Dropdown from "react-dropdown";
 import "react-dropdown/style.css";
-import axios from "axios";
-import Loader from "./components/loader";
+import useCurrencies from "./Hooks/useCurrencies";
+import useCurrencyConversion from "./Hooks/useCurrencyConversion";
 
 function App() {
-  const [currencies, setCurrencies] = useState([]);
-  const [selectedOption1, setSelectedOption1] = useState(currencies[0]);
-  const [selectedOption2, setSelectedOption2] = useState(null);
+  const {
+    currencies,
+    loading: currenciesLoading,
+    error: currenciesError,
+  } = useCurrencies();
+
+  const {
+    finalCrrRate,
+    loading: conversionLoading,
+    error: conversionError,
+    convertCurrency,
+  } = useCurrencyConversion();
+
+  const [selectedOption1, setSelectedOption1] = useState("USD");
+  const [selectedOption2, setSelectedOption2] = useState("INR");
   const [amount, setAmount] = useState(1);
-  const [finalCrrRate, setFinalCrrRate] = useState();
-  const [loading, setLoading] = useState(true); // Initially set loading to true
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        await new Promise((resolve) => setTimeout(resolve, 500));
-        const response = await axios.get(
-          `https://v6.exchangerate-api.com/v6/131f18139b19091a1e80da11/latest/USD`
-        );
-        const options = Object.keys(response.data.conversion_rates);
-        setCurrencies(options);
-        setLoading(false); // Set loading to false after data is fetched
-      } catch (error) {
-        setError("Error fetching data. Please try again later.");
-        setLoading(false); // Set loading to false in case of error
-      }
-    };
-
-    fetchData();
-  }, []);
 
   const _onSelect1 = (selectedOption) => {
     setSelectedOption1(selectedOption);
@@ -40,20 +30,8 @@ function App() {
     setSelectedOption2(selectedOption);
   };
 
-  const handleSubmit = async () => {
-    setLoading(true); // Set loading to true when submitting the form
-    try {
-      const response1 = await axios.get(
-        `https://v6.exchangerate-api.com/v6/131f18139b19091a1e80da11/latest/${selectedOption1.label}`
-      );
-      const CrrRate = response1.data.conversion_rates;
-      const SelectedCrrRate = CrrRate[selectedOption2.label];
-      setFinalCrrRate(SelectedCrrRate * amount);
-      setLoading(false); // Set loading to false after data is fetched
-    } catch (error) {
-      setError("Error fetching rate. Please try again later.");
-      setLoading(false); // Set loading to false in case of error
-    }
+  const handleSubmit = () => {
+    convertCurrency(selectedOption1.value, selectedOption2.value, amount);
   };
 
   const handleSwapClick = () => {
@@ -62,73 +40,80 @@ function App() {
   };
 
   return (
-    <div className="max-w-md mx-auto p-6 bg-white rounded-lg shadow-md">
-      <div className="text-2xl font-bold mb-4">Currency Converter</div>
-      {error && <div className="text-red-500 mb-4">{error}</div>}
-      {loading ? ( // Conditionally render loading indicator
-        <>
-          <Loader className="mt-10" />
-          <div className="text-center">Loading...</div>
-        </>
-      ) : (
-        <>
-          <div className="mb-4">
-            <label className="font-bold text-lg">Enter Amount:</label>
-            <input
-              name="amount"
-              type="number"
-              autoFocus={true}
-              min="1"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              className="border border-gray-300 rounded-md px-2 py-1 ml-2 focus:outline-none focus:border-blue-500"
-            />
-          </div>
-          <div className="flex items-center mb-4">
-            <div className="mr-4">
-              <label className="font-bold text-lg">From:</label>
-              <Dropdown
-                options={currencies}
-                value={selectedOption1}
-                placeholder="Select.."
-                onChange={_onSelect1}
-                className="border border-blue-400 rounded-md w-full mt-1"
+    <div className="flex flex-col items-center min-h-screen bg-green-900">
+      <div className="text-3xl font-bold text-green-300 my-8">
+        Currency Converter
+      </div>
+      <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-lg">
+        {currenciesError && (
+          <div className="text-red-500 mb-4">{currenciesError}</div>
+        )}
+        {conversionError && (
+          <div className="text-red-500 mb-4">{conversionError}</div>
+        )}
+        {currenciesLoading || conversionLoading ? (
+          <>
+            <div className="text-center">Loading...</div>
+          </>
+        ) : (
+          <>
+            <div className="mb-4">
+              <label className="block font-bold text-lg mb-2">Amount</label>
+              <input
+                name="amount"
+                type="number"
+                min="1"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:border-blue-500"
               />
+            </div>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex-1 mr-2">
+                <label className="block font-bold text-lg mb-2">From</label>
+                <Dropdown
+                  options={currencies}
+                  value={selectedOption1}
+                  placeholder="Select.."
+                  onChange={_onSelect1}
+                  className="w-full border border-gray-300 rounded-md"
+                />
+              </div>
+              <button
+                className="flex-none p-3 bg-green-500 text-white rounded-full hover:bg-green-600 focus:outline-none mx-2 mt-8"
+                onClick={handleSwapClick}
+                type="button"
+              >
+                ⇄
+              </button>
+              <div className="flex-1 ml-2">
+                <label className="block font-bold text-lg mb-2">To</label>
+                <Dropdown
+                  options={currencies}
+                  value={selectedOption2}
+                  placeholder="Select.."
+                  onChange={_onSelect2}
+                  className="w-full border border-gray-300 rounded-md"
+                />
+              </div>
             </div>
             <button
-              className="px-4 py-2 font-semibold text-white bg-blue-500 rounded-md hover:bg-blue-600 focus:outline-none"
-              onClick={handleSwapClick}
+              className="w-full py-3 bg-green-500 text-white rounded-md hover:bg-green-600 focus:outline-none"
+              onClick={handleSubmit}
               type="button"
             >
-              Swap
+              Convert
             </button>
-            <div className="ml-4">
-              <label className="font-bold text-lg">To:</label>
-              <Dropdown
-                options={currencies}
-                value={selectedOption2}
-                onChange={_onSelect2}
-                placeholder="Select.."
-                className="border border-blue-400 rounded-md w-full mt-1"
-              />
-            </div>
-          </div>
-          <button
-            className="w-full py-2 font-semibold text-white bg-blue-500 rounded-md hover:bg-blue-600 focus:outline-none"
-            onClick={handleSubmit}
-            type="button"
-          >
-            Convert
-          </button>
-          {finalCrrRate !== undefined && (
-            <div className="text-xl mt-4">
-              Value of {amount} {selectedOption1.label} into{" "}
-              {selectedOption2.label} is{" "}
-              <span className="font-bold text-2xl">{finalCrrRate}</span>
-            </div>
-          )}
-        </>
-      )}
+            {finalCrrRate !== undefined && (
+              <div className="text-xl mt-4">
+                Value of {amount} {selectedOption1.label} into{" "}
+                {selectedOption2.label} is{" "}
+                <span className="font-bold text-2xl">{finalCrrRate}</span>
+              </div>
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 }
