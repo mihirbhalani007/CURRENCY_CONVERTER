@@ -80,7 +80,7 @@ function App() {
                 />
               </div>
               <button
-                className="flex-none p-3 bg-green-500 text-white rounded-full hover:bg-green-600 focus:outline-none mx-2 mt-8"
+                className="flex-none p-3 bg-green-500 text-white rounded-2xl hover:bg-green-600 focus:outline-none mx-2 mt-8"
                 onClick={handleSwapClick}
                 type="button"
               >
